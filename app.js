@@ -9,6 +9,11 @@ let motionApi = null;
   }
 })();
 
+const motionEasing = "cubic-bezier(0.22, 1, 0.36, 1)";
+const motionEasingSoft = "cubic-bezier(0.16, 1, 0.3, 1)";
+const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const fallbackErrorMessage = "İşlem sırasında hata oluştu, tekrar deneyin.";
+
 let auth;
 let db;
 let onAuthStateChanged;
@@ -70,11 +75,18 @@ const currency = new Intl.NumberFormat("tr-TR", {
 });
 
 function playAnimation(target, keyframes, options = {}) {
+  if (prefersReducedMotion()) return;
   const nodes = Array.from(document.querySelectorAll(target));
   if (!nodes.length) return;
 
+  const mergedOptions = {
+    duration: 0.35,
+    easing: motionEasing,
+    ...options
+  };
+
   if (motionApi?.animate) {
-    const motionOptions = { ...options };
+    const motionOptions = { ...mergedOptions };
     if (motionOptions.stagger) {
       motionOptions.delay = motionApi.stagger(motionOptions.stagger);
       delete motionOptions.stagger;
@@ -83,15 +95,30 @@ function playAnimation(target, keyframes, options = {}) {
     return;
   }
 
-  const delayStep = options.stagger || 0;
+  const delayStep = mergedOptions.stagger || 0;
   nodes.forEach((node, index) => {
     node.animate(keyframes, {
-      duration: (options.duration || 0.2) * 1000,
+      duration: mergedOptions.duration * 1000,
       fill: "both",
-      easing: options.easing || "ease-out",
-      delay: ((options.delay || 0) + delayStep * index) * 1000
+      easing: mergedOptions.easing,
+      delay: ((mergedOptions.delay || 0) + delayStep * index) * 1000
     });
   });
+}
+
+function animateHero() {
+  playAnimation(".hero h1", { opacity: [0, 1], transform: ["translateY(18px)", "translateY(0px)"] }, { duration: 0.5 });
+  playAnimation(".hero p", { opacity: [0, 1], transform: ["translateY(16px)", "translateY(0px)"] }, { duration: 0.45, delay: 0.08, easing: motionEasingSoft });
+}
+
+function animateAuthPanel() {
+  playAnimation("#authPanel", { opacity: [0, 1], transform: ["translateY(16px) scale(0.98)", "translateY(0px) scale(1)"] }, { duration: 0.45 });
+  playAnimation("#authForm label, #authForm button", { opacity: [0, 1], transform: ["translateY(10px)", "translateY(0px)"] }, { duration: 0.32, stagger: 0.05, delay: 0.06, easing: motionEasingSoft });
+}
+
+function animateDashboardIntro() {
+  playAnimation("#dashboard .card:not(.stat-card)", { opacity: [0, 1], transform: ["translateY(16px) scale(0.985)", "translateY(0px) scale(1)"] }, { duration: 0.4, stagger: 0.08 });
+  playAnimation(".stat-card", { opacity: [0, 1], transform: ["translateY(14px) scale(0.98)", "translateY(0px) scale(1)"] }, { duration: 0.36, stagger: 0.05, delay: 0.08, easing: motionEasingSoft });
 }
 
 function slugify(value) {
@@ -121,6 +148,7 @@ function setAuthMode(mode) {
   el.authSubmit.textContent = register ? "İşletme Oluştur" : "Giriş Yap";
   el.modeToggle.textContent = register ? "Giriş yap" : "Yeni işletme oluştur";
   showMessage(el.authMessage, "");
+  animateAuthPanel();
 }
 
 function setAuthLoading(isLoading) {
@@ -137,10 +165,31 @@ function mapAuthError(code) {
   const messages = {
     "auth/email-already-in-use": "Bu işletme adı zaten kayıtlı.",
     "auth/invalid-credential": "İşletme adı veya şifre hatalı.",
+    "auth/user-not-found": "İşletme adı veya şifre hatalı.",
+    "auth/wrong-password": "İşletme adı veya şifre hatalı.",
+    "auth/invalid-email": "İşletme adı geçersiz.",
     "auth/weak-password": "Şifre en az 6 karakter olmalı.",
+    "auth/operation-not-allowed": "Firebase Authentication'da E-posta/Şifre yöntemi kapalı. Firebase Console'dan E-posta/Şifre yöntemini etkinleştirin.",
+    "auth/unauthorized-domain": "Bu alan adı yetkili değil. Firebase Console'da alan adını yetkilendirin.",
+    "auth/invalid-api-key": "Firebase API anahtarı geçersiz veya proje kapalı.",
+    "auth/network-request-failed": "Ağ bağlantısı kurulamadı. İnternet erişimini kontrol edin.",
     "auth/too-many-requests": "Çok fazla deneme oldu, lütfen biraz bekleyin."
   };
-  return messages[code] || "İşlem sırasında hata oluştu, tekrar deneyin.";
+  return messages[code] || fallbackErrorMessage;
+}
+
+function mapFirestoreError(code) {
+  if (code === "permission-denied") {
+    return "Firestore erişimi reddedildi. Güvenlik kurallarını kontrol edin.";
+  }
+  return null;
+}
+
+function mapFirebaseError(code) {
+  if (code.startsWith("auth/")) {
+    return mapAuthError(code);
+  }
+  return mapFirestoreError(code) || fallbackErrorMessage;
 }
 
 async function resolveBusinessSlugForUser(uid) {
@@ -286,7 +335,15 @@ function renderDebts() {
     el.debtList.appendChild(li);
   });
 
-  playAnimation(".debt-item", { opacity: [0, 1], transform: ["translateY(6px)", "translateY(0px)"] }, { duration: 0.18, stagger: 0.03 });
+  playAnimation(
+    ".debt-item",
+    {
+      opacity: [0, 1],
+      transform: ["translateY(16px) scale(0.985)", "translateY(0px) scale(1)"],
+      filter: ["blur(4px)", "blur(0px)"]
+    },
+    { duration: 0.32, stagger: 0.05, easing: motionEasingSoft }
+  );
 }
 
 async function toggleDebtStatus(item) {
@@ -345,8 +402,8 @@ el.authForm.addEventListener("submit", async (event) => {
     }
     el.authForm.reset();
   } catch (error) {
-    const msg = error.code ? mapAuthError(error.code) : error.message;
-    showMessage(el.authMessage, msg, true);
+    const mapped = error.code ? mapFirebaseError(error.code) : null;
+    showMessage(el.authMessage, mapped || error.message || fallbackErrorMessage, true);
   } finally {
     setAuthLoading(false);
   }
@@ -419,8 +476,7 @@ async function handleAuthStateChange(user) {
 
     togglePanels(true);
     subscribeDebts();
-
-    playAnimation(".stat-card", { opacity: [0, 1], transform: ["translateY(8px)", "translateY(0px)"] }, { duration: 0.22, stagger: 0.04 });
+    animateDashboardIntro();
   } catch (error) {
     console.error("Oturum yükleme hatası:", error);
     showMessage(el.authMessage, "Oturum yüklenemedi, tekrar giriş yapın.", true);
@@ -466,5 +522,6 @@ async function bootstrap() {
   onAuthStateChanged(auth, handleAuthStateChange);
 }
 
-playAnimation(".auth-panel", { opacity: [0, 1], transform: ["translateY(10px)", "translateY(0px)"] }, { duration: 0.25 });
+animateHero();
+animateAuthPanel();
 bootstrap();
