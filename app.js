@@ -11,7 +11,7 @@ let motionApi = null;
 
 const motionEasing = "cubic-bezier(0.22, 1, 0.36, 1)";
 const motionEasingSoft = "cubic-bezier(0.16, 1, 0.3, 1)";
-const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let auth;
 let db;
@@ -74,7 +74,7 @@ const currency = new Intl.NumberFormat("tr-TR", {
 });
 
 function playAnimation(target, keyframes, options = {}) {
-  if (prefersReducedMotion.matches) return;
+  if (prefersReducedMotion()) return;
   const nodes = Array.from(document.querySelectorAll(target));
   if (!nodes.length) return;
 
@@ -169,7 +169,7 @@ function mapAuthError(code) {
     "auth/invalid-email": "İşletme adı geçersiz.",
     "auth/weak-password": "Şifre en az 6 karakter olmalı.",
     "auth/operation-not-allowed": "Firebase Authentication'da Email/Şifre yöntemi kapalı. Console'dan Email/Password yöntemini etkinleştirin.",
-    "auth/unauthorized-domain": "Bu alan adı yetkili değil. Firebase Console > Authentication > Settings bölümünden domaini ekleyin.",
+    "auth/unauthorized-domain": "Bu alan adı yetkili değil. Firebase Console > Authentication > Settings bölümünden alan adını ekleyin.",
     "auth/invalid-api-key": "Firebase API anahtarı geçersiz veya proje kapalı.",
     "auth/network-request-failed": "Ağ bağlantısı kurulamadı. İnternet erişimini kontrol edin.",
     "permission-denied": "Firestore erişimi reddedildi. Güvenlik kurallarını kontrol edin.",
