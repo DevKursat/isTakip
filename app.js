@@ -358,8 +358,8 @@ el.authForm.addEventListener("submit", async (event) => {
   const name = el.businessName.value;
   const password = el.password.value;
 
-  if (password.length < 6) {
-    showMessage(el.authMessage, "Şifre en az 6 karakter olmalı.", true);
+  if (password.length < 4) {
+    showMessage(el.authMessage, "Şifre en az 4 karakter olmalı.", true);
     return;
   }
 
