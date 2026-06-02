@@ -44,6 +44,7 @@ const el = {
   logoutBtn: document.getElementById("logoutBtn"),
   debtForm: document.getElementById("debtForm"),
   debtName: document.getElementById("debtName"),
+  customerSuggestions: document.getElementById("customerSuggestions"),
   debtAmount: document.getElementById("debtAmount"),
   debtDate: document.getElementById("debtDate"),
   debtNote: document.getElementById("debtNote"),
@@ -255,7 +256,14 @@ function filteredDebts() {
   });
 }
 
+function updateSuggestions() {
+  if (!el.customerSuggestions) return;
+  const names = [...new Set(state.debts.map((d) => d.name))].sort();
+  el.customerSuggestions.innerHTML = names.map((name) => `<option value="${name}">`).join("");
+}
+
 function renderDebts() {
+  updateSuggestions();
   totalize();
   const rows = filteredDebts();
   el.debtList.innerHTML = "";
