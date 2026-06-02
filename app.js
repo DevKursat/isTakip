@@ -160,7 +160,7 @@ function togglePanels(isAuthenticated) {
   el.dashboard.classList.toggle("hidden", !isAuthenticated);
 }
 
-function mapFirebaseError(code) {
+function mapAuthError(code) {
   const messages = {
     "auth/email-already-in-use": "Bu işletme adı zaten kayıtlı.",
     "auth/invalid-credential": "İşletme adı veya şifre hatalı.",
@@ -168,14 +168,27 @@ function mapFirebaseError(code) {
     "auth/wrong-password": "İşletme adı veya şifre hatalı.",
     "auth/invalid-email": "İşletme adı geçersiz.",
     "auth/weak-password": "Şifre en az 6 karakter olmalı.",
-    "auth/operation-not-allowed": "Firebase Authentication'da Email/Şifre yöntemi kapalı. Firebase Console'dan Email/Password yöntemini etkinleştirin.",
-    "auth/unauthorized-domain": "Bu alan adı yetkili değil. Firebase Console > Authentication > Settings bölümünden alan adını ekleyin.",
+    "auth/operation-not-allowed": "Firebase Authentication'da E-posta/Şifre yöntemi kapalı. Firebase Console'dan E-posta/Şifre yöntemini etkinleştirin.",
+    "auth/unauthorized-domain": "Bu alan adı yetkili değil. Firebase Console'da alan adını yetkilendirin.",
     "auth/invalid-api-key": "Firebase API anahtarı geçersiz veya proje kapalı.",
     "auth/network-request-failed": "Ağ bağlantısı kurulamadı. İnternet erişimini kontrol edin.",
-    "permission-denied": "Firestore erişimi reddedildi. Güvenlik kurallarını kontrol edin.",
     "auth/too-many-requests": "Çok fazla deneme oldu, lütfen biraz bekleyin."
   };
-  return messages[code] || "İşlem sırasında hata oluştu, tekrar deneyin.";
+  return messages[code];
+}
+
+function mapFirestoreError(code) {
+  if (code === "permission-denied") {
+    return "Firestore erişimi reddedildi. Güvenlik kurallarını kontrol edin.";
+  }
+  return null;
+}
+
+function mapFirebaseError(code) {
+  if (code.startsWith("auth/")) {
+    return mapAuthError(code);
+  }
+  return mapFirestoreError(code);
 }
 
 async function resolveBusinessSlugForUser(uid) {
@@ -388,8 +401,8 @@ el.authForm.addEventListener("submit", async (event) => {
     }
     el.authForm.reset();
   } catch (error) {
-    const msg = error.code ? mapFirebaseError(error.code) : error.message;
-    showMessage(el.authMessage, msg, true);
+    const mapped = error.code ? mapFirebaseError(error.code) : null;
+    showMessage(el.authMessage, mapped || error.message || "İşlem sırasında hata oluştu, tekrar deneyin.", true);
   } finally {
     setAuthLoading(false);
   }
