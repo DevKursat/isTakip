@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>isTakip | İşletme Borç Defteri</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <h1>isTakip</h1>
+        <p>İşletme borçlarını kolayca takip et, filtrele ve kapat.</p>
+      </header>
+
+      <main class="container">
+        <section class="card auth-panel" id="authPanel">
+          <div class="auth-header">
+            <h2 id="authTitle">İşletme Oluştur</h2>
+            <button id="modeToggle" class="text-btn" type="button">Giriş yap</button>
+          </div>
+          <form id="authForm" class="stack">
+            <label>
+              İşletme Adı
+              <input id="businessName" type="text" placeholder="Örn: Yıldız Market" required minlength="2" autocomplete="organization" />
+            </label>
+            <label>
+              Şifre
+              <input id="password" type="password" placeholder="En az 6 karakter" required minlength="6" autocomplete="current-password" />
+            </label>
+            <button id="authSubmit" type="submit">İşletme Oluştur</button>
+          </form>
+          <p class="hint">Aynı işletme adı + şifre ile telefondan/bilgisayardan giriş yapabilirsiniz.</p>
+          <p id="authMessage" class="message" aria-live="polite"></p>
+        </section>
+
+        <section id="dashboard" class="dashboard hidden">
+          <div class="card top-bar">
+            <div>
+              <h2 id="businessTitle">İşletme</h2>
+              <p class="sub">Bulut senkronizasyonu aktif</p>
+            </div>
+            <button id="logoutBtn" class="danger" type="button">Çıkış Yap</button>
+          </div>
+
+          <div class="stats-grid" id="statsGrid">
+            <article class="card stat-card">
+              <h3>Açık Borç</h3>
+              <p id="openTotal">₺0</p>
+            </article>
+            <article class="card stat-card">
+              <h3>Kapatılan Toplam</h3>
+              <p id="paidTotal">₺0</p>
+            </article>
+            <article class="card stat-card">
+              <h3>Kayıt Sayısı</h3>
+              <p id="recordCount">0</p>
+            </article>
+          </div>
+
+          <section class="card">
+            <h3>Yeni Borç Kaydı</h3>
+            <form id="debtForm" class="grid-form">
+              <label>
+                Müşteri / İşlem
+                <input id="debtName" type="text" required placeholder="Örn: Ahmet - Veresiye" />
+              </label>
+              <label>
+                Tutar (₺)
+                <input id="debtAmount" type="number" required min="0.01" step="0.01" placeholder="0.00" />
+              </label>
+              <label class="full">
+                Not (Ne yapıldı?)
+                <textarea id="debtNote" rows="3" placeholder="Örn: 2 çuval un, 1 kasa su"></textarea>
+              </label>
+              <button type="submit">Borç Ekle</button>
+            </form>
+            <p id="debtMessage" class="message" aria-live="polite"></p>
+          </section>
+
+          <section class="card">
+            <div class="controls">
+              <input id="searchInput" type="search" placeholder="Kayıtlarda ara..." />
+              <select id="statusFilter">
+                <option value="all">Tümü</option>
+                <option value="open">Açık</option>
+                <option value="paid">Kapalı / Ödendi</option>
+              </select>
+            </div>
+            <ul id="debtList" class="debt-list"></ul>
+            <p id="emptyState" class="empty">Kayıt bulunmuyor.</p>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
