@@ -97,9 +97,9 @@ function playAnimation(target, keyframes, options = {}) {
   const delayStep = mergedOptions.stagger || 0;
   nodes.forEach((node, index) => {
     node.animate(keyframes, {
-      duration: (mergedOptions.duration || 0.2) * 1000,
+      duration: mergedOptions.duration * 1000,
       fill: "both",
-      easing: mergedOptions.easing || "ease-out",
+      easing: mergedOptions.easing,
       delay: ((mergedOptions.delay || 0) + delayStep * index) * 1000
     });
   });
@@ -168,7 +168,7 @@ function mapAuthError(code) {
     "auth/wrong-password": "İşletme adı veya şifre hatalı.",
     "auth/invalid-email": "İşletme adı geçersiz.",
     "auth/weak-password": "Şifre en az 6 karakter olmalı.",
-    "auth/operation-not-allowed": "Firebase Authentication'da Email/Şifre yöntemi kapalı. Console'dan Email/Password yöntemini etkinleştirin.",
+    "auth/operation-not-allowed": "Firebase Authentication'da Email/Şifre yöntemi kapalı. Firebase Console'dan Email/Password yöntemini etkinleştirin.",
     "auth/unauthorized-domain": "Bu alan adı yetkili değil. Firebase Console > Authentication > Settings bölümünden alan adını ekleyin.",
     "auth/invalid-api-key": "Firebase API anahtarı geçersiz veya proje kapalı.",
     "auth/network-request-failed": "Ağ bağlantısı kurulamadı. İnternet erişimini kontrol edin.",
