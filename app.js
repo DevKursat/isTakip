@@ -45,6 +45,7 @@ const el = {
   debtForm: document.getElementById("debtForm"),
   debtName: document.getElementById("debtName"),
   debtAmount: document.getElementById("debtAmount"),
+  debtDate: document.getElementById("debtDate"),
   debtNote: document.getElementById("debtNote"),
   debtMessage: document.getElementById("debtMessage"),
   searchInput: document.getElementById("searchInput"),
@@ -286,6 +287,14 @@ function renderDebts() {
     status.className = `badge ${item.status}`;
     status.textContent = item.status === "paid" ? "Kapalı" : "Açık";
 
+    const date = document.createElement("span");
+    date.className = "date-badge";
+    date.textContent = item.date ? new Date(item.date).toLocaleDateString("tr-TR") : "-";
+
+    const info = document.createElement("div");
+    info.className = "item-info";
+    info.append(status, date);
+
     const note = document.createElement("p");
     note.textContent = item.note ? `Not: ${item.note}` : "Not: -";
 
@@ -305,7 +314,7 @@ function renderDebts() {
     deleteBtn.addEventListener("click", () => removeDebt(item.id));
 
     actions.append(toggleBtn, deleteBtn);
-    li.append(head, status, note, actions);
+    li.append(head, info, note, actions);
     el.debtList.appendChild(li);
   });
 
@@ -394,10 +403,11 @@ el.debtForm.addEventListener("submit", async (event) => {
 
   const name = el.debtName.value.trim();
   const amount = Number(el.debtAmount.value);
+  const date = el.debtDate.value;
   const note = el.debtNote.value.trim();
 
-  if (!name || Number.isNaN(amount) || amount <= 0) {
-    showMessage(el.debtMessage, "Lütfen geçerli ad ve tutar girin.", true);
+  if (!name || Number.isNaN(amount) || amount <= 0 || !date) {
+    showMessage(el.debtMessage, "Lütfen geçerli ad, tutar ve tarih girin.", true);
     return;
   }
 
@@ -405,6 +415,7 @@ el.debtForm.addEventListener("submit", async (event) => {
     await addDoc(collection(db, "businesses", state.businessSlug, "debts"), {
       name,
       amount,
+      date,
       note,
       status: "open",
       createdAt: serverTimestamp(),
@@ -413,12 +424,18 @@ el.debtForm.addEventListener("submit", async (event) => {
     });
 
     el.debtForm.reset();
+    el.debtDate.value = new Date().toISOString().split("T")[0];
     showMessage(el.debtMessage, "Borç kaydı eklendi.");
   } catch (error) {
     console.error("Borç ekleme hatası:", error);
     showMessage(el.debtMessage, "Kayıt eklenemedi, tekrar deneyin.", true);
   }
 });
+
+// Set default date on load
+if (el.debtDate) {
+  el.debtDate.value = new Date().toISOString().split("T")[0];
+}
 
 el.searchInput.addEventListener("input", renderDebts);
 el.statusFilter.addEventListener("change", renderDebts);

@@ -233,6 +233,18 @@ button.danger {
   color: #166534;
 }
 
+.item-info {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.date-badge {
+  font-size: 0.85rem;
+  color: var(--sub);
+  font-weight: 500;
+}
+
 .debt-item p {
   margin: 0;
   color: var(--sub);
