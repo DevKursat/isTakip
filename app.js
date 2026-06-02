@@ -12,6 +12,7 @@ let motionApi = null;
 const motionEasing = "cubic-bezier(0.22, 1, 0.36, 1)";
 const motionEasingSoft = "cubic-bezier(0.16, 1, 0.3, 1)";
 const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const fallbackErrorMessage = "İşlem sırasında hata oluştu, tekrar deneyin.";
 
 let auth;
 let db;
@@ -174,7 +175,7 @@ function mapAuthError(code) {
     "auth/network-request-failed": "Ağ bağlantısı kurulamadı. İnternet erişimini kontrol edin.",
     "auth/too-many-requests": "Çok fazla deneme oldu, lütfen biraz bekleyin."
   };
-  return messages[code];
+  return messages[code] || fallbackErrorMessage;
 }
 
 function mapFirestoreError(code) {
@@ -188,7 +189,7 @@ function mapFirebaseError(code) {
   if (code.startsWith("auth/")) {
     return mapAuthError(code);
   }
-  return mapFirestoreError(code);
+  return mapFirestoreError(code) || fallbackErrorMessage;
 }
 
 async function resolveBusinessSlugForUser(uid) {
@@ -402,7 +403,7 @@ el.authForm.addEventListener("submit", async (event) => {
     el.authForm.reset();
   } catch (error) {
     const mapped = error.code ? mapFirebaseError(error.code) : null;
-    showMessage(el.authMessage, mapped || error.message || "İşlem sırasında hata oluştu, tekrar deneyin.", true);
+    showMessage(el.authMessage, mapped || error.message || fallbackErrorMessage, true);
   } finally {
     setAuthLoading(false);
   }
