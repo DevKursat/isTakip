@@ -14,12 +14,7 @@ const motionEasingSoft = "cubic-bezier(0.16, 1, 0.3, 1)";
 const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const fallbackErrorMessage = "İşlem sırasında hata oluştu, tekrar deneyin.";
 
-let auth;
 let db;
-let onAuthStateChanged;
-let createUserWithEmailAndPassword;
-let signInWithEmailAndPassword;
-let signOut;
 let collection;
 let addDoc;
 let onSnapshot;
@@ -161,22 +156,7 @@ function togglePanels(isAuthenticated) {
   el.dashboard.classList.toggle("hidden", !isAuthenticated);
 }
 
-function mapAuthError(code) {
-  const messages = {
-    "auth/email-already-in-use": "Bu işletme adı zaten kayıtlı.",
-    "auth/invalid-credential": "İşletme adı veya şifre hatalı.",
-    "auth/user-not-found": "İşletme adı veya şifre hatalı.",
-    "auth/wrong-password": "İşletme adı veya şifre hatalı.",
-    "auth/invalid-email": "İşletme adı geçersiz.",
-    "auth/weak-password": "Şifre en az 6 karakter olmalı.",
-    "auth/operation-not-allowed": "Firebase Authentication'da E-posta/Şifre yöntemi kapalı. Firebase Console'dan E-posta/Şifre yöntemini etkinleştirin.",
-    "auth/unauthorized-domain": "Bu alan adı yetkili değil. Firebase Console'da alan adını yetkilendirin.",
-    "auth/invalid-api-key": "Firebase API anahtarı geçersiz veya proje kapalı.",
-    "auth/network-request-failed": "Ağ bağlantısı kurulamadı. İnternet erişimini kontrol edin.",
-    "auth/too-many-requests": "Çok fazla deneme oldu, lütfen biraz bekleyin."
-  };
-  return messages[code] || fallbackErrorMessage;
-}
+// Removed mapAuthError
 
 function mapFirestoreError(code) {
   if (code === "permission-denied") {
@@ -186,26 +166,10 @@ function mapFirestoreError(code) {
 }
 
 function mapFirebaseError(code) {
-  if (code.startsWith("auth/")) {
-    return mapAuthError(code);
-  }
   return mapFirestoreError(code) || fallbackErrorMessage;
 }
 
-async function resolveBusinessSlugForUser(uid) {
-  const stored = localStorage.getItem("businessSlug");
-  if (stored) {
-    const snap = await getDoc(doc(db, "businesses", stored));
-    if (snap.exists() && snap.data().ownerUid === uid) {
-      return stored;
-    }
-  }
-
-  const q = query(collection(db, "businesses"), where("ownerUid", "==", uid), limit(1));
-  const result = await getDocs(q);
-  if (result.empty) return "";
-  return result.docs[0].id;
-}
+// Removed unused resolveBusinessSlugForUser
 
 async function createBusiness(name, password) {
   const slug = slugify(name);
@@ -219,18 +183,16 @@ async function createBusiness(name, password) {
     throw new Error("Bu işletme adı kullanımda.");
   }
 
-  const email = businessEmail(slug);
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-
   await setDoc(ref, {
     name: name.trim(),
     slug,
-    ownerUid: cred.user.uid,
+    password: password,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });
 
   localStorage.setItem("businessSlug", slug);
+  await handleSession();
 }
 
 async function loginBusiness(name, password) {
@@ -239,8 +201,20 @@ async function loginBusiness(name, password) {
     throw new Error("İşletme adı en az 2 karakter içermeli ve sadece harf/sayı kullanılmalıdır.");
   }
 
-  await signInWithEmailAndPassword(auth, businessEmail(slug), password);
+  const ref = doc(db, "businesses", slug);
+  const snap = await getDoc(ref);
+  
+  if (!snap.exists()) {
+    throw new Error("İşletme adı veya şifre hatalı.");
+  }
+  
+  const data = snap.data();
+  if (data.password !== password) {
+    throw new Error("İşletme adı veya şifre hatalı.");
+  }
+
   localStorage.setItem("businessSlug", slug);
+  await handleSession();
 }
 
 function resetDebtState() {
@@ -450,8 +424,10 @@ el.debtForm.addEventListener("submit", async (event) => {
 el.searchInput.addEventListener("input", renderDebts);
 el.statusFilter.addEventListener("change", renderDebts);
 
-async function handleAuthStateChange(user) {
-  if (!user) {
+async function handleSession() {
+  const slug = localStorage.getItem("businessSlug");
+  
+  if (!slug) {
     togglePanels(false);
     if (state.unsubscribeDebts) state.unsubscribeDebts();
     resetDebtState();
@@ -460,17 +436,16 @@ async function handleAuthStateChange(user) {
   }
 
   try {
-    const slug = await resolveBusinessSlugForUser(user.uid);
-    if (!slug) {
+    const businessSnap = await getDoc(doc(db, "businesses", slug));
+    
+    if (!businessSnap.exists()) {
       showMessage(el.authMessage, "İşletme kaydı bulunamadı.", true);
-      await signOut(auth);
+      localStorage.removeItem("businessSlug");
+      handleSession();
       return;
     }
 
     state.businessSlug = slug;
-    localStorage.setItem("businessSlug", slug);
-
-    const businessSnap = await getDoc(doc(db, "businesses", slug));
     const business = businessSnap.data();
     el.businessTitle.textContent = business?.name || slug;
 
@@ -480,7 +455,8 @@ async function handleAuthStateChange(user) {
   } catch (error) {
     console.error("Oturum yükleme hatası:", error);
     showMessage(el.authMessage, "Oturum yüklenemedi, tekrar giriş yapın.", true);
-    await signOut(auth);
+    localStorage.removeItem("businessSlug");
+    handleSession();
   }
 }
 
@@ -492,15 +468,7 @@ async function bootstrap() {
     return;
   }
 
-  auth = firebase.auth;
   db = firebase.db;
-
-  ({
-    onAuthStateChanged,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut
-  } = firebase.firebaseAuth);
 
   ({
     collection,
@@ -519,7 +487,7 @@ async function bootstrap() {
     getDoc
   } = firebase.firebaseDb);
 
-  onAuthStateChanged(auth, handleAuthStateChange);
+  await handleSession();
 }
 
 animateHero();
