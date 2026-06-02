@@ -160,7 +160,7 @@ function togglePanels(isAuthenticated) {
   el.dashboard.classList.toggle("hidden", !isAuthenticated);
 }
 
-function mapAuthError(code) {
+function mapFirebaseError(code) {
   const messages = {
     "auth/email-already-in-use": "Bu işletme adı zaten kayıtlı.",
     "auth/invalid-credential": "İşletme adı veya şifre hatalı.",
@@ -388,7 +388,7 @@ el.authForm.addEventListener("submit", async (event) => {
     }
     el.authForm.reset();
   } catch (error) {
-    const msg = error.code ? mapAuthError(error.code) : error.message;
+    const msg = error.code ? mapFirebaseError(error.code) : error.message;
     showMessage(el.authMessage, msg, true);
   } finally {
     setAuthLoading(false);
