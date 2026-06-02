@@ -106,7 +106,7 @@ function slugify(value) {
 }
 
 function businessEmail(slug) {
-  return `${slug}@istakip.local`;
+  return `${slug}@istakip-k.firebaseapp.com`;
 }
 
 function showMessage(target, text, isError = false) {
@@ -161,7 +161,7 @@ async function resolveBusinessSlugForUser(uid) {
 async function createBusiness(name, password) {
   const slug = slugify(name);
   if (!slug) {
-    throw new Error("İşletme adı geçerli değil.");
+    throw new Error("İşletme adı en az 2 karakter içermeli ve sadece harf/sayı kullanılmalıdır.");
   }
 
   const ref = doc(db, "businesses", slug);
@@ -187,7 +187,7 @@ async function createBusiness(name, password) {
 async function loginBusiness(name, password) {
   const slug = slugify(name);
   if (!slug) {
-    throw new Error("İşletme adı geçerli değil.");
+    throw new Error("İşletme adı en az 2 karakter içermeli ve sadece harf/sayı kullanılmalıdır.");
   }
 
   await signInWithEmailAndPassword(auth, businessEmail(slug), password);
@@ -384,7 +384,8 @@ el.debtForm.addEventListener("submit", async (event) => {
 
     el.debtForm.reset();
     showMessage(el.debtMessage, "Borç kaydı eklendi.");
-  } catch {
+  } catch (error) {
+    console.error("Borç ekleme hatası:", error);
     showMessage(el.debtMessage, "Kayıt eklenemedi, tekrar deneyin.", true);
   }
 });
@@ -420,7 +421,8 @@ async function handleAuthStateChange(user) {
     subscribeDebts();
 
     playAnimation(".stat-card", { opacity: [0, 1], transform: ["translateY(8px)", "translateY(0px)"] }, { duration: 0.22, stagger: 0.04 });
-  } catch {
+  } catch (error) {
+    console.error("Oturum yükleme hatası:", error);
     showMessage(el.authMessage, "Oturum yüklenemedi, tekrar giriş yapın.", true);
     await signOut(auth);
   }

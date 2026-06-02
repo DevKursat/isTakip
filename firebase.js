@@ -6,6 +6,7 @@ const firebaseConfig = {
   messagingSenderId: "231110333938",
   appId: "1:231110333938:web:6424493bf74bd160e7c76b"
 };
+// Not: Firebase web config istemci tarafında görünürdür; veri güvenliği Firestore/Auth kurallarıyla sağlanmalıdır.
 
 export async function initFirebase() {
   try {
